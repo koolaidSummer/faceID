@@ -1,9 +1,23 @@
 import os
 import cv2
 import numpy as np
+from gtts import gTTS
+import playsound #호환성 문제로 1.2.2버전으로 다운그레이드
+import sys
+import io
+
+sys.stdout = io.TextIOWrapper(sys.stdout.detach(),encoding='utf-8')
+sys.stderr = io.TextIOWrapper(sys.stderr.detach(),encoding='utf-8')
 
 #opencv에서 제공하는 미리 학습된 파일
 cascade_path = 'C:/workspace/cascade/haarcascade_frontalface_default.xml'
+
+def speak(text):
+    tts = gTTS(text=text,lang="ko")
+    filename = "C:/workspace/face_voice/temp.mp3"
+    tts.save(filename)
+    playsound.playsound(filename)
+
 
 #얼굴 추출해서 저장하기
 def faceScrap(uname):
@@ -89,6 +103,7 @@ def faceTrain():
                     recognizer.train(x_train, np.array(y_ID))
                     recognizer.save("C:/workspace/Trained/face_trained.yml")
     print("Train End")
+    speak("학습이 완료되었습니다.")
     print("-----------------------")
 
 def faceRecognize():
@@ -109,6 +124,8 @@ def faceRecognize():
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         faces = face_cascade.detectMultiScale(gray, scaleFactor=1.5, minNeighbors=5)  # 얼굴 인식
 
+        break_i = False
+
         for (x, y, w, h) in faces:
             roi_gray = gray[y:y + h, x:x + w]  # 얼굴 부분만 가져오기
 
@@ -119,9 +136,15 @@ def faceRecognize():
                 cv2.putText(img, labels[id_], (x, y - 10), font, 1, (255, 255, 255), 2)
                 cv2.rectangle(img, (x, y), (x + w, y + h), (255, 0, 255), 2)
                 print("Recognize Video --%s has been detected--"%labels[id_])
+                str = labels[id_] + " 인식되었습니다."
+                speak(str)
+
+                break_i = True
+                break
+
 
         cv2.imshow('Preview', img)  # 이미지 보여주기
-        if cv2.waitKey(10) >= 0:  # 키 입력 대기, 10ms
+        if cv2.waitKey(10) >= 0 or break_i == True:  # 키 입력 대기, 10ms
             break
 
     # 전체 종료
