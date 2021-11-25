@@ -179,7 +179,6 @@ while(True):
         faceRecognize()
     elif menu=='2':
         uname = input("이름을 입력해 주세요 : ")
-        print("화면에 얼굴을 비춰주세요")
         faceScrap(uname)
         faceTrain()
     elif menu=='3':
