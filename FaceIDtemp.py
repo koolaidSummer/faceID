@@ -1,3 +1,4 @@
+from datetime import datetime
 import os
 import cv2
 import numpy as np
@@ -5,19 +6,29 @@ from gtts import gTTS
 import playsound #호환성 문제로 1.2.2버전으로 다운그레이드
 import sys
 import io
+import pandas as pd
+from tabulate import tabulate
 
+#한글 인코딩 설정
 sys.stdout = io.TextIOWrapper(sys.stdout.detach(),encoding='utf-8')
 sys.stderr = io.TextIOWrapper(sys.stderr.detach(),encoding='utf-8')
 
 #opencv에서 제공하는 미리 학습된 파일
 cascade_path = 'C:/workspace/cascade/haarcascade_frontalface_default.xml'
 
+#datasheet 생성
+columns = ['Name', 'Check', 'Time']
+df = pd.DataFrame(columns=columns)
+for i in os.listdir("C:/workspace/FaceScrap"):
+    df = df.append({'Name': i, 'Check': 'X', 'Time': '----'}, ignore_index=True)
+
+
 def speak(text):
     tts = gTTS(text=text,lang="ko")
     filename = "C:/workspace/face_voice/temp.mp3"
     tts.save(filename)
     playsound.playsound(filename)
-
+    os.remove(filename)
 
 #얼굴 추출해서 저장하기
 def faceScrap(uname):
@@ -114,7 +125,7 @@ def faceRecognize():
     listPath = "C:\workspace\FaceScrap"
     labels = os.listdir(listPath)
 
-    cap = cv2.VideoCapture(0)  # 카메라 실행
+    cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)  # 카메라 실행
 
     if cap.isOpened() == False:  # 카메라 생성 확인
         exit()
@@ -131,12 +142,17 @@ def faceRecognize():
 
             id_, conf = recognizer.predict(roi_gray)  # 얼마나 유사한지 확인
 
-            if conf >= 80:
+            if conf >= 50:
                 font = cv2.FONT_HERSHEY_SIMPLEX  # 폰트 지정
                 cv2.putText(img, labels[id_], (x, y - 10), font, 1, (255, 255, 255), 2)
                 cv2.rectangle(img, (x, y), (x + w, y + h), (255, 0, 255), 2)
+
                 print("Recognize Video --%s has been detected--"%labels[id_])
                 str = labels[id_] + " 인식되었습니다."
+
+                df.loc[id_, 'Check'] = 'O'
+                df.loc[id_, 'Time'] = datetime.now().strftime('%m-%d %H:%M')
+
                 speak(str)
 
                 break_i = True
@@ -154,9 +170,9 @@ def faceRecognize():
 
 while(True):
     print("--------------------------------------------")
-    print("--------------Face ID System----------------")
+    print("------------| Face ID System |--------------")
     print("--------------------------------------------")
-    print("-----------1.인식 | 2.학습 | 3.종료------------")
+    print("-----| 1.인식 | 2.학습 | 3.출력 | 4.종료 |-----")
     menu = input("메뉴를 선택해 주세요 : ")
 
     if menu=='1':
@@ -167,4 +183,7 @@ while(True):
         faceScrap(uname)
         faceTrain()
     elif menu=='3':
+        print("--------------------------------------------")
+        print(tabulate(df, headers=["Name","Check","Time"]))
+    elif menu=='4':
         break
